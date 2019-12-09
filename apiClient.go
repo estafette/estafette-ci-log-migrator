@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	contracts "github.com/estafette/estafette-ci-contracts"
@@ -102,39 +103,76 @@ func (impl *apiClientImpl) CopyLogsToCloudStorage(ctx context.Context, pipeline 
 
 	log.Info().Msgf("Start copying logs to cloud storage for pipeline %v...", pipeline.GetFullRepoPath())
 
-	pageNumber := 1
 	pageSize := 5
+	parallelPageRuns := 5
 
 	// migrate build logs
-	for true {
-		copiedLogsCount, err := impl.copyLogsToCloudStoragePerPage(ctx, pipeline, pageNumber, pageSize, "builds")
-		if err != nil {
-			return err
-		}
-
-		if copiedLogsCount < pageSize {
-			break
-		}
-
-		pageNumber++
+	err = impl.copyLogsToCloudStorageInParallel(ctx, pipeline, pageSize, parallelPageRuns, "builds")
+	if err != nil {
+		return err
 	}
 
 	// migrate releases logs
-	pageNumber = 1
-	for true {
-		copiedLogs, err := impl.copyLogsToCloudStoragePerPage(ctx, pipeline, pageNumber, pageSize, "releases")
-		if err != nil {
-			return err
-		}
-
-		if copiedLogs < pageSize {
-			break
-		}
-
-		pageNumber++
+	err = impl.copyLogsToCloudStorageInParallel(ctx, pipeline, pageSize, parallelPageRuns, "releases")
+	if err != nil {
+		return err
 	}
 
 	log.Info().Msgf("Finished copying logs to cloud storage for pipeline %v", pipeline.GetFullRepoPath())
+
+	return nil
+}
+
+func (impl *apiClientImpl) copyLogsToCloudStorageInParallel(ctx context.Context, pipeline contracts.Pipeline, pageSize, parallelPageRuns int, jobType string) (err error) {
+
+	span, ctx := opentracing.StartSpanFromContext(ctx, "APIClient::copyLogsToCloudStorageInParallel")
+	span.SetTag("pipeline", pipeline.GetFullRepoPath())
+	span.SetTag("pageSize", pageSize)
+	span.SetTag("parallelPageRuns", parallelPageRuns)
+	span.SetTag("jobType", jobType)
+	defer span.Finish()
+
+	// migrate build logs
+	pageNumber := 1
+	for true {
+
+		copiedLogsCounts := make(chan int, parallelPageRuns)
+		errors := make(chan error, parallelPageRuns)
+
+		var wg sync.WaitGroup
+		wg.Add(parallelPageRuns)
+
+		for j := pageNumber; j < pageNumber+parallelPageRuns; j++ {
+			go func(ctx context.Context, pipeline contracts.Pipeline, pageNumber, pageSize int, jobType string) {
+				copiedLogsCount, err := impl.copyLogsToCloudStoragePerPage(ctx, pipeline, pageNumber, pageSize, jobType)
+				if err != nil {
+					errors <- err
+				}
+
+				copiedLogsCounts <- copiedLogsCount
+			}(ctx, pipeline, j, pageSize, jobType)
+		}
+
+		// wait for all parallel runs to finish
+		wg.Wait()
+
+		// return error if any of them have been generated
+		close(errors)
+		for e := range errors {
+			return e
+		}
+
+		// break loop if any of the calls have processed less logs than the page size
+		close(copiedLogsCounts)
+		for cl := range copiedLogsCounts {
+			if cl < pageSize {
+				break
+			}
+		}
+
+		// otherwise continue with the next pages
+		pageNumber += parallelPageRuns
+	}
 
 	return nil
 }
@@ -145,6 +183,7 @@ func (impl *apiClientImpl) copyLogsToCloudStoragePerPage(ctx context.Context, pi
 	span.SetTag("pipeline", pipeline.GetFullRepoPath())
 	span.SetTag("pageNumber", pageNumber)
 	span.SetTag("pageSize", pageSize)
+	span.SetTag("jobType", jobType)
 	defer span.Finish()
 
 	copyLogsToCloudStorageURL := fmt.Sprintf("%v/api/copylogstocloudstorage/%v?page[number]=%v&page[size]=%v&filter[search]=%v", impl.apiURL, pipeline.GetFullRepoPath(), pageNumber, pageSize, jobType)

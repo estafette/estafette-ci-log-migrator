@@ -3,10 +3,8 @@ package main
 import (
 	"context"
 	"runtime"
-	"sync"
 
 	"github.com/alecthomas/kingpin"
-	contracts "github.com/estafette/estafette-ci-contracts"
 	foundation "github.com/estafette/estafette-foundation"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
@@ -61,39 +59,12 @@ func main() {
 
 	log.Info().Msgf("Retrieved %v pipelines", len(pipelines))
 
-	parallelPipelineCount := 5
-	startIndex := 0
-	for true {
-		// get pipelines to process in parallel
-		if startIndex > len(pipelines) {
-			// we're done, exit loop
-			break
+	for _, pl := range pipelines {
+		err = apiClient.CopyLogsToCloudStorage(ctx, *pl)
+		if err != nil {
+			span.Finish()
+			log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pl.GetFullRepoPath())
 		}
-		endIndex := startIndex + parallelPipelineCount
-		if endIndex > len(pipelines) {
-			// don't try to pick more than there's left
-			endIndex = len(pipelines)
-		}
-		parallelPipelines := pipelines[startIndex:endIndex]
-
-		var wg sync.WaitGroup
-		wg.Add(len(parallelPipelines))
-
-		for _, pl := range parallelPipelines {
-			go func(ctx context.Context, pipeline contracts.Pipeline) {
-				defer wg.Done()
-				err = apiClient.CopyLogsToCloudStorage(ctx, pipeline)
-				if err != nil {
-					span.Finish()
-					wg.Done()
-					log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pipeline.GetFullRepoPath())
-				}
-			}(ctx, *pl)
-		}
-
-		wg.Wait()
-
-		startIndex += parallelPipelineCount
 	}
 
 	log.Info().Msg("Finished migrating logs to cloud storage")

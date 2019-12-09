@@ -105,6 +105,7 @@ releases:
         image: extensions/helm:dev
         action: install
         namespace: estafette
+        timeout: 60m
         values: |-
           secret:
             apiKey: estafette.secret(F-GHrep4UAYEVH18.fhWaqbptXBp6Zc0jBFaisNwSP2TTqjzwKK6uD8_EomjU6JY_3t21uaRf7lzcUA==)

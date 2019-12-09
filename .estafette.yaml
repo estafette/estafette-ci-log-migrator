@@ -1,0 +1,104 @@
+builder:
+  track: dev
+
+labels:
+  app-group: estafette-ci
+  team: estafette-team
+  language: golang
+
+version:
+  semver:
+    major: 0
+    minor: 1
+
+stages:
+  build-lint-and-package:
+    parallelStages:
+      build:
+        image: golang:1.13.4-alpine3.10
+        env:
+          CGO_ENABLED: 0
+          GOOS: linux
+        commands:
+        - go test ./...
+        - go build -a -installsuffix cgo -ldflags "-X main.appgroup=${ESTAFETTE_LABEL_APP_GROUP} -X main.app=${ESTAFETTE_GIT_NAME} -X main.version=${ESTAFETTE_BUILD_VERSION} -X main.revision=${ESTAFETTE_GIT_REVISION} -X main.branch=${ESTAFETTE_GIT_BRANCH} -X main.buildDate=${ESTAFETTE_BUILD_DATETIME}" -o ./publish/${ESTAFETTE_GIT_NAME} .
+
+      lint-helm-chart:
+        image: extensions/helm:dev
+        action: lint
+
+      package-helm-chart:
+        image: extensions/helm:dev
+        action: package
+
+  bake:
+    image: extensions/docker:dev
+    action: build
+    inline: |
+      FROM scratch
+
+      LABEL maintainer="estafette.io" \
+            description="The ${ESTAFETTE_GIT_NAME} is a component to move logs from one log store to the other"
+
+      COPY ca-certificates.crt /etc/ssl/certs/
+      COPY ${ESTAFETTE_GIT_NAME} /
+
+      ENTRYPOINT ["/${ESTAFETTE_GIT_NAME}"]
+    repositories:
+    - estafette
+    path: ./publish
+    copy:
+    - /etc/ssl/certs/ca-certificates.crt
+
+  push-to-docker-hub:
+    image: extensions/docker:dev
+    action: push
+    repositories:
+    - estafette
+
+    test-helm-chart:
+      services:
+      - name: kubernetes
+        image: bsycorp/kind:latest-1.12
+        readiness:
+          path: /kubernetes-ready
+          port: 10080
+      image: extensions/helm:dev
+      action: test
+      values: |-
+        secret:
+          apiKey: abc
+        apiUrl: https://httpstat.us/200
+  
+    clone-charts-repo:
+      image: extensions/git-clone:dev
+      repo: helm-charts
+      branch: master
+  
+    publish-helm-chart:
+      image: extensions/helm:dev
+      action: publish
+  
+  slack-notify:
+    image: extensions/slack-build-status:dev
+    workspace: estafette
+    channels:
+    - '#build-status'
+    when:
+      status == 'succeeded' ||
+      status == 'failed'
+
+releases:
+  tooling:
+    stages:
+      install:
+        image: extensions/helm:dev
+        action: install
+        namespace: estafette
+        values: |-
+          secret:
+            apiKey: estafette.secret(F-GHrep4UAYEVH18.fhWaqbptXBp6Zc0jBFaisNwSP2TTqjzwKK6uD8_EomjU6JY_3t21uaRf7lzcUA==)
+          apiUrl: estafette.secret(NiUV4xKW7FZorz9K.BYjcAJxBGCAJk9uXog3r8hpLPRq-08hEQIY6S-WvW8ENn9W1Na8yRX7ZLPj4oemwAQRvWvQEiCyX_YsF)
+          jaeger:
+            enable: true
+            samplerType: const

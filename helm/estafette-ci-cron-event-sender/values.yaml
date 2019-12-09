@@ -1,0 +1,83 @@
+# Default values for estafette-ci-log-migrator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+#
+# APPLICATION SETTINGS
+#
+
+secret:
+  # if set to true the values are already base64 encoded when provided, otherwise the template performs the base64 encoding
+  valuesAreBase64Encoded: false
+
+  # the api key for communicating with estafette-ci-api
+  apiKey:
+
+# the base api url communicate with the estafette ci api
+apiUrl:
+
+jaeger:
+  # if enabled the jaeger tracing library sends traces into the jaeger backend, otherwise the NoopTracer is used
+  enable: false
+  # probabilistic, const or remote
+  samplerType: probabilistic
+  # provides the probability if samplerType is probabilistic or remote (until remote config is received)
+  samplerParam: 0.1
+
+#
+# GENERIC SETTINGS
+#
+
+image:
+  repository: estafette/estafette-ci-log-migrator
+  # The tag can be set to override the appVersion getting used as the image tag
+  tag:
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name:
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 125m
+    memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# pass (additional) arguments to the container
+extraArgs: []
+
+# use to set extra environment variables
+extraEnv: {}
+
+# use to add extra labels
+extraLabels: {}
+
+# use to add extra labels to podspec for getting their values in prometheus
+extraPodLabels: {}

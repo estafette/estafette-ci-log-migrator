@@ -81,13 +81,18 @@ func (impl *apiClientImpl) getPipelinesPerPage(ctx context.Context, pageNumber, 
 		return
 	}
 
+	var listResponse struct {
+		Pipelines []*contracts.Pipeline `json:"items"`
+	}
+
 	// unmarshal pipelines from body
-	err = json.Unmarshal(body, &pipelines)
+	err = json.Unmarshal(body, &listResponse)
 	if err != nil {
+		log.Error().Err(err).Str("body", string(body)).Msg("Failed unmarshalling pipelines body")
 		return
 	}
 
-	return pipelines, nil
+	return listResponse.Pipelines, nil
 }
 
 func (impl *apiClientImpl) CopyLogsToCloudStorage(ctx context.Context, pipeline contracts.Pipeline) (err error) {

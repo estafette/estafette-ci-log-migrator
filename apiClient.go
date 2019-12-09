@@ -144,6 +144,8 @@ func (impl *apiClientImpl) copyLogsToCloudStorageInParallel(ctx context.Context,
 
 		for j := pageNumber; j < pageNumber+parallelPageRuns; j++ {
 			go func(ctx context.Context, pipeline contracts.Pipeline, pageNumber, pageSize int, jobType string) {
+				defer wg.Done()
+
 				copiedLogsCount, err := impl.copyLogsToCloudStoragePerPage(ctx, pipeline, pageNumber, pageSize, jobType)
 				if err != nil {
 					errors <- err
@@ -166,7 +168,7 @@ func (impl *apiClientImpl) copyLogsToCloudStorageInParallel(ctx context.Context,
 		close(copiedLogsCounts)
 		for cl := range copiedLogsCounts {
 			if cl < pageSize {
-				break
+				return nil
 			}
 		}
 

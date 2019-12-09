@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -159,6 +160,11 @@ func (impl *apiClientImpl) copyLogsToCloudStoragePerPage(ctx context.Context, pi
 
 func (impl *apiClientImpl) request(ctx context.Context, span opentracing.Span, method, url string, validStatusCodes []int) (body []byte, err error) {
 
+	log.Debug().
+		Str("method", method).
+		Str("url", url).
+		Msg("Handling request")
+
 	// create client, in order to add headers
 	client := pester.NewExtendedClient(&http.Client{Transport: &nethttp.Transport{}})
 	client.MaxRetries = 5
@@ -197,6 +203,11 @@ func (impl *apiClientImpl) request(ctx context.Context, span opentracing.Span, m
 	}
 	if !hasValidStatusCode {
 		return body, fmt.Errorf("Status code %v for '%v %v' is not one of the valid status codes %v for this request. Body: %v", response.StatusCode, method, url, validStatusCodes, string(body))
+	}
+
+	body, err = ioutil.ReadAll(response.Body)
+	if err != nil {
+		return
 	}
 
 	return

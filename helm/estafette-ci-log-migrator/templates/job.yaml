@@ -39,6 +39,8 @@ spec:
             {{- toYaml . | nindent 16 }}
           {{- end }}
           env:
+            - name: "ESTAFETTE_LOG_FORMAT"
+              value: "{{ .Values.logFormat }}"
             - name: "API_KEY"
               valueFrom:
                 secretKeyRef:

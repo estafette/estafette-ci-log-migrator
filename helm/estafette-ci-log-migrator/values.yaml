@@ -16,6 +16,9 @@ secret:
 # the base api url communicate with the estafette ci api
 apiUrl:
 
+# the following log formats are available: plaintext, console, json, stackdriver, v3 (see https://github.com/estafette/estafette-foundation for more info)
+logFormat: plaintext
+
 jaeger:
   # if enabled the jaeger tracing library sends traces into the jaeger backend, otherwise the NoopTracer is used
   enable: false

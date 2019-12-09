@@ -64,11 +64,12 @@ func main() {
 	parallelPipelineCount := 5
 	startIndex := 0
 	for true {
-		endIndex := startIndex + parallelPipelineCount
+		// get pipelines to process in parallel
 		if startIndex > len(pipelines) {
 			// we're done, exit loop
 			break
 		}
+		endIndex := startIndex + parallelPipelineCount
 		if endIndex > len(pipelines) {
 			// don't try to pick more than there's left
 			endIndex = len(pipelines)
@@ -84,14 +85,15 @@ func main() {
 				err = apiClient.CopyLogsToCloudStorage(ctx, pipeline)
 				if err != nil {
 					span.Finish()
-					log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pl.GetFullRepoPath())
+					wg.Done()
+					log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pipeline.GetFullRepoPath())
 				}
 			}(ctx, *pl)
 		}
 
 		wg.Wait()
 
-		startIndex = startIndex + parallelPipelineCount
+		startIndex += parallelPipelineCount
 	}
 
 	log.Info().Msg("Finished migrating logs to cloud storage")

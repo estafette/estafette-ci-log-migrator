@@ -47,13 +47,13 @@ spec:
                   name: {{ include "estafette-ci-log-migrator.fullname" . }}
                   key: apiKey
             - name: API_URL
-              value: {{.Values.apiUrl}}
+              value: {{.Values.apiUrl | quote}}
             - name: PAGE_SIZE_FOR_PIPELINES_RETRIEVAL
-              value: {{.Values.pageSizeForPipelinesRetrieval}}
+              value: {{.Values.pageSizeForPipelinesRetrieval | quote}}
             - name: PAGE_SIZE_FOR_MIGRATION
-              value: {{.Values.pageSizeForMigration}}
+              value: {{.Values.pageSizeForMigration | quote}}
             - name: PAGES_TO_MIGRATE_IN_PARALLEL
-              value: {{.Values.pagesToMigrateInParallel}}
+              value: {{.Values.pagesToMigrateInParallel | quote}}
             {{- if .Values.jaeger.enable }}
             - name: JAEGER_AGENT_HOST
               valueFrom:
@@ -63,14 +63,14 @@ spec:
             - name: JAEGER_SAMPLER_MANAGER_HOST_PORT
               value: http://$(JAEGER_AGENT_HOST):5778/sampling
             - name: JAEGER_SAMPLER_TYPE
-              value: {{.Values.jaeger.samplerType}}
+              value: {{.Values.jaeger.samplerType | quote}}
             - name: JAEGER_SAMPLER_PARAM
-              value: "{{.Values.jaeger.samplerParam}}"
+              value: {{.Values.jaeger.samplerParam | quote}}
             - name: JAEGER_SERVICE_NAME
               value: {{ include "estafette-ci-log-migrator.fullname" . }}
             {{- else }}
             - name: JAEGER_DISABLED
-              value: 'true'
+              value: "true"
             {{- end }}
             {{- range $key, $value := .Values.extraEnv }}
             - name: {{ $key }}

@@ -104,7 +104,7 @@ func (impl *apiClientImpl) CopyLogsToCloudStorage(ctx context.Context, pipeline 
 	log.Info().Msgf("Start copying logs to cloud storage for pipeline %v...", pipeline.GetFullRepoPath())
 
 	pageSize := 5
-	parallelPageRuns := 5
+	parallelPageRuns := 2
 
 	// migrate build logs
 	err = impl.copyLogsToCloudStorageInParallel(ctx, pipeline, pageSize, parallelPageRuns, "builds")

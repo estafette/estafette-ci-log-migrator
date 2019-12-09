@@ -96,10 +96,14 @@ releases:
         image: extensions/helm:dev
         action: package
 
+      uninstall:
+        image: extensions/helm:dev
+        action: uninstall
+        namespace: estafette
+
       install:
         image: extensions/helm:dev
         action: install
-        force: true
         namespace: estafette
         values: |-
           secret:

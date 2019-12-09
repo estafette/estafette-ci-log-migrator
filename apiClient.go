@@ -183,7 +183,7 @@ func (impl *apiClientImpl) request(ctx context.Context, span opentracing.Span, m
 	}
 
 	// add tracing context
-	request = request.WithContext(opentracing.ContextWithSpan(request.Context(), span))
+	request = request.WithContext(opentracing.ContextWithSpan(ctx, span))
 
 	// collect additional information on setting up connections
 	request, ht := nethttp.TraceRequest(span.Tracer(), request)

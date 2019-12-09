@@ -108,3 +108,4 @@ releases:
           jaeger:
             enable: true
             samplerType: const
+            samplerParam: 1

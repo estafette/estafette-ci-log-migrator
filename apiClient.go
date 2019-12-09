@@ -45,7 +45,7 @@ func (impl *apiClientImpl) GetPipelines(ctx context.Context) (pipelines []*contr
 	pipelines = []*contracts.Pipeline{}
 
 	pageNumber := 1
-	pageSize := 20
+	pageSize := 50
 
 	for true {
 		pl, err := impl.getPipelinesPerPage(ctx, pageNumber, pageSize)
@@ -103,7 +103,7 @@ func (impl *apiClientImpl) CopyLogsToCloudStorage(ctx context.Context, pipeline 
 	log.Info().Msgf("Start copying logs to cloud storage for pipeline %v...", pipeline.GetFullRepoPath())
 
 	pageNumber := 1
-	pageSize := 20
+	pageSize := 5
 
 	// migrate build logs
 	for true {

@@ -107,12 +107,12 @@ func (impl *apiClientImpl) CopyLogsToCloudStorage(ctx context.Context, pipeline 
 
 	// migrate build logs
 	for true {
-		copiedLogs, err := impl.copyLogsToCloudStoragePerPage(ctx, pipeline, pageNumber, pageSize, "builds")
+		copiedLogsCount, err := impl.copyLogsToCloudStoragePerPage(ctx, pipeline, pageNumber, pageSize, "builds")
 		if err != nil {
 			return err
 		}
 
-		if copiedLogs < pageSize {
+		if copiedLogsCount < pageSize {
 			break
 		}
 
@@ -139,7 +139,7 @@ func (impl *apiClientImpl) CopyLogsToCloudStorage(ctx context.Context, pipeline 
 	return nil
 }
 
-func (impl *apiClientImpl) copyLogsToCloudStoragePerPage(ctx context.Context, pipeline contracts.Pipeline, pageNumber, pageSize int, jobType string) (copiedLogs int, err error) {
+func (impl *apiClientImpl) copyLogsToCloudStoragePerPage(ctx context.Context, pipeline contracts.Pipeline, pageNumber, pageSize int, jobType string) (copiedLogsCount int, err error) {
 
 	span, ctx := opentracing.StartSpanFromContext(ctx, "APIClient::copyLogsToCloudStoragePerPage")
 	span.SetTag("pipeline", pipeline.GetFullRepoPath())
@@ -154,13 +154,13 @@ func (impl *apiClientImpl) copyLogsToCloudStoragePerPage(ctx context.Context, pi
 		return
 	}
 
-	copiedLogs, err = strconv.Atoi(string(body))
+	copiedLogsCount, err = strconv.Atoi(string(body))
 	if err != nil {
+		log.Error().Err(err).Str("body", string(body)).Msg("Failed reading int value from response")
 		return
 	}
 
-	return copiedLogs, nil
-
+	return copiedLogsCount, nil
 }
 
 func (impl *apiClientImpl) request(ctx context.Context, span opentracing.Span, method, url string, validStatusCodes []int) (body []byte, err error) {
@@ -200,6 +200,7 @@ func (impl *apiClientImpl) request(ctx context.Context, span opentracing.Span, m
 	defer response.Body.Close()
 	ht.Finish()
 
+	// verify that status code is a valid one for this request
 	hasValidStatusCode := false
 	for _, sc := range validStatusCodes {
 		if response.StatusCode == sc {

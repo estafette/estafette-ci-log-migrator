@@ -90,7 +90,12 @@ stages:
 
 releases:
   tooling:
+    clone: true
     stages:
+      package-helm-chart:
+        image: extensions/helm:dev
+        action: package
+
       install:
         image: extensions/helm:dev
         action: install

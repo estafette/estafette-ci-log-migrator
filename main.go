@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"runtime"
+	"sync"
 
 	"github.com/alecthomas/kingpin"
+	contracts "github.com/estafette/estafette-ci-contracts"
 	foundation "github.com/estafette/estafette-foundation"
 	"github.com/opentracing/opentracing-go"
 	"github.com/rs/zerolog/log"
@@ -56,6 +58,38 @@ func main() {
 	}
 
 	log.Info().Msgf("Retrieved %v pipelines", len(pipelines))
+
+	parallelPipelineCount := 5
+	startIndex := 0
+	for true {
+		endIndex := startIndex + parallelPipelineCount
+		if startIndex > len(pipelines) {
+			// we're done, exit loop
+			break
+		}
+		if endIndex > len(pipelines) {
+			// don't try to pick more than there's left
+			endIndex = len(pipelines)
+		}
+		parallelPipelines := pipelines[startIndex:endIndex]
+
+		var wg sync.WaitGroup
+		wg.Add(len(parallelPipelines))
+
+		for _, pl := range parallelPipelines {
+			go func(ctx context.Context, pipeline contracts.Pipeline) {
+				defer wg.Done()
+				err = apiClient.CopyLogsToCloudStorage(ctx, pipeline)
+				if err != nil {
+					log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pl.GetFullRepoPath())
+				}
+			}(ctx, *pl)
+		}
+
+		wg.Wait()
+
+		startIndex = startIndex + parallelPipelineCount
+	}
 
 	for _, pl := range pipelines {
 		err = apiClient.CopyLogsToCloudStorage(ctx, *pl)

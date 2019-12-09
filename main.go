@@ -94,13 +94,5 @@ func main() {
 		startIndex = startIndex + parallelPipelineCount
 	}
 
-	for _, pl := range pipelines {
-		err = apiClient.CopyLogsToCloudStorage(ctx, *pl)
-		if err != nil {
-			span.Finish()
-			log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pl.GetFullRepoPath())
-		}
-	}
-
 	log.Info().Msg("Finished migrating logs to cloud storage")
 }

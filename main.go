@@ -48,12 +48,14 @@ func main() {
 
 	apiClient, err := NewAPIClient(*apiURL, *apiKey)
 	if err != nil {
+		span.Finish()
 		log.Fatal().Err(err).Msg("Failed initializing api client")
 	}
 
 	// get pipelines
 	pipelines, err := apiClient.GetPipelines(ctx)
 	if err != nil {
+		span.Finish()
 		log.Fatal().Err(err).Msg("Failed retrieving pipelines")
 	}
 
@@ -81,6 +83,7 @@ func main() {
 				defer wg.Done()
 				err = apiClient.CopyLogsToCloudStorage(ctx, pipeline)
 				if err != nil {
+					span.Finish()
 					log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pl.GetFullRepoPath())
 				}
 			}(ctx, *pl)
@@ -94,6 +97,7 @@ func main() {
 	for _, pl := range pipelines {
 		err = apiClient.CopyLogsToCloudStorage(ctx, *pl)
 		if err != nil {
+			span.Finish()
 			log.Fatal().Err(err).Msgf("Failed copying logs to cloud storage for pipeline %v", pl.GetFullRepoPath())
 		}
 	}

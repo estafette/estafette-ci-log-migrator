@@ -99,6 +99,7 @@ releases:
       install:
         image: extensions/helm:dev
         action: install
+        force: true
         namespace: estafette
         values: |-
           secret:

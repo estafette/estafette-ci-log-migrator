@@ -48,6 +48,12 @@ spec:
                   key: apiKey
             - name: API_URL
               value: {{.Values.apiUrl}}
+            - name: PAGE_SIZE_FOR_PIPELINES_RETRIEVAL
+              value: {{.Values.pageSizeForPipelinesRetrieval}}
+            - name: PAGE_SIZE_FOR_MIGRATION
+              value: {{.Values.pageSizeForMigration}}
+            - name: PAGES_TO_MIGRATE_IN_PARALLEL
+              value: {{.Values.pagesToMigrateInParallel}}
             {{- if .Values.jaeger.enable }}
             - name: JAEGER_AGENT_HOST
               valueFrom:

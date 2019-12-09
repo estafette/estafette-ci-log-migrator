@@ -19,8 +19,11 @@ var (
 	buildDate string
 	goVersion = runtime.Version()
 
-	apiKey = kingpin.Flag("api-key", "The Estafette server passes in this json structure to parameterize the build, set trusted images and inject credentials.").Envar("API_KEY").String()
-	apiURL = kingpin.Flag("api-url", "The location of estafette-ci-api to communicate with").Envar("API_URL").String()
+	apiKey                        = kingpin.Flag("api-key", "The Estafette server passes in this json structure to parameterize the build, set trusted images and inject credentials.").Envar("API_KEY").String()
+	apiURL                        = kingpin.Flag("api-url", "The location of estafette-ci-api to communicate with").Envar("API_URL").String()
+	pageSizeForPipelinesRetrieval = kingpin.Flag("page-size-for-pipelines-retrieval", "Page size for retrieving pipelines from api").Default("10").OverrideDefaultFromEnvar("PAGE_SIZE_FOR_PIPELINES_RETRIEVAL").Int()
+	pageSizeForMigration          = kingpin.Flag("page-size-for-migration", "Page size for migrating logs to cloud storage via api").Default("5").OverrideDefaultFromEnvar("PAGE_SIZE_FOR_MIGRATION").Int()
+	pagesToMigrateInParallel      = kingpin.Flag("pages-to-migrate-in-parallel", "Number of pages to migrate in parallel via api").Default("2").OverrideDefaultFromEnvar("PAGES_TO_MIGRATE_IN_PARALLEL").Int()
 )
 
 func main() {
@@ -44,7 +47,7 @@ func main() {
 
 	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	apiClient, err := NewAPIClient(*apiURL, *apiKey)
+	apiClient, err := NewAPIClient(*apiURL, *apiKey, *pageSizeForPipelinesRetrieval, *pageSizeForMigration, *pagesToMigrateInParallel)
 	if err != nil {
 		span.Finish()
 		log.Fatal().Err(err).Msg("Failed initializing api client")

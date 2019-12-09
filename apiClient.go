@@ -24,15 +24,21 @@ type APIClient interface {
 }
 
 type apiClientImpl struct {
-	apiURL string
-	apiKey string
+	apiURL                        string
+	apiKey                        string
+	pageSizeForPipelinesRetrieval int
+	pageSizeForMigration          int
+	pagesToMigrateInParallel      int
 }
 
 // NewAPIClient returns an instance for the APIClient interface
-func NewAPIClient(apiURL, apiKey string) (APIClient, error) {
+func NewAPIClient(apiURL, apiKey string, pageSizeForPipelinesRetrieval, pageSizeForMigration, pagesToMigrateInParallel int) (APIClient, error) {
 	return &apiClientImpl{
-		apiURL: apiURL,
-		apiKey: apiKey,
+		apiURL:                        apiURL,
+		apiKey:                        apiKey,
+		pageSizeForPipelinesRetrieval: pageSizeForPipelinesRetrieval,
+		pageSizeForMigration:          pageSizeForMigration,
+		pagesToMigrateInParallel:      pagesToMigrateInParallel,
 	}, nil
 }
 
@@ -46,7 +52,7 @@ func (impl *apiClientImpl) GetPipelines(ctx context.Context) (pipelines []*contr
 	pipelines = []*contracts.Pipeline{}
 
 	pageNumber := 1
-	pageSize := 50
+	pageSize := impl.pageSizeForPipelinesRetrieval
 
 	for true {
 		pl, err := impl.getPipelinesPerPage(ctx, pageNumber, pageSize)
@@ -103,17 +109,14 @@ func (impl *apiClientImpl) CopyLogsToCloudStorage(ctx context.Context, pipeline 
 
 	log.Info().Msgf("Start copying logs to cloud storage for pipeline %v...", pipeline.GetFullRepoPath())
 
-	pageSize := 5
-	parallelPageRuns := 2
-
 	// migrate build logs
-	err = impl.copyLogsToCloudStorageInParallel(ctx, pipeline, pageSize, parallelPageRuns, "builds")
+	err = impl.copyLogsToCloudStorageInParallel(ctx, pipeline, impl.pageSizeForMigration, impl.pagesToMigrateInParallel, "builds")
 	if err != nil {
 		return err
 	}
 
 	// migrate releases logs
-	err = impl.copyLogsToCloudStorageInParallel(ctx, pipeline, pageSize, parallelPageRuns, "releases")
+	err = impl.copyLogsToCloudStorageInParallel(ctx, pipeline, impl.pageSizeForMigration, impl.pagesToMigrateInParallel, "releases")
 	if err != nil {
 		return err
 	}

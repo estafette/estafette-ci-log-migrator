@@ -16,6 +16,15 @@ secret:
 # the base api url communicate with the estafette ci api
 apiUrl:
 
+# page size when calling api for retrieving pipelines
+pageSizeForPipelinesRetrieval: 10
+
+# page size when calling api for migrating logs to cloud storage
+pageSizeForMigration: 5
+
+# calls to run in parallel when calling api for migrating logs to cloud storage
+pagesToMigrateInParallel: 2
+
 # the following log formats are available: plaintext, console, json, stackdriver, v3 (see https://github.com/estafette/estafette-foundation for more info)
 logFormat: plaintext
 

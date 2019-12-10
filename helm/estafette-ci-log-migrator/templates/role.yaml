@@ -1,0 +1,17 @@
+{{- if .Values.rbac.enable -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "estafette-ci-log-migrator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "estafette-ci-log-migrator.labels" . | indent 4 }}
+rules:
+- apiGroups: [""] # "" indicates the core API group
+  resources:
+  - configmaps
+  verbs:
+  - list
+  - get
+  - update
+{{- end -}}

@@ -1,0 +1,17 @@
+{{- if .Values.rbac.enable -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "estafette-ci-log-migrator.fullname" . }}
+  namespace: {{ .Values.jobs.namespace }}
+  labels:
+{{ include "estafette-ci-log-migrator.labels" . | indent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "estafette-ci-log-migrator.fullname" . }}
+subjects:
+- kind: ServiceAccount
+  name: {{ template "estafette-ci-log-migrator.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+{{- end -}}

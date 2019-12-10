@@ -54,6 +54,10 @@ spec:
               value: {{.Values.pageSizeForMigration | quote}}
             - name: PAGES_TO_MIGRATE_IN_PARALLEL
               value: {{.Values.pagesToMigrateInParallel | quote}}
+            - name: CONFIG_PATH
+              value: "/configs/config.yaml"
+            - name: CONFIGMAP_NAME
+              value: {{ include "estafette-ci-log-migrator.fullname" . | quote }}
             {{- if .Values.jaeger.enable }}
             - name: JAEGER_AGENT_HOST
               valueFrom:
@@ -78,7 +82,14 @@ spec:
             {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 16 }}
+          volumeMounts:
+            - name: configs
+              mountPath: /configs
       terminationGracePeriodSeconds: 300
+      volumes:
+        - name: configs
+          configMap:
+            name: {{ include "estafette-ci-log-migrator.fullname" . }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 12 }}

@@ -4,4 +4,4 @@ metadata:
   name: {{ include "estafette-ci-log-migrator.fullname" . }}
   namespace: {{ .Release.Namespace }}
   labels:
-{{ include "estafette-ci-log-migrator" . | indent 4 }}
+{{ include "estafette-ci-log-migrator.labels" . | indent 4 }}
